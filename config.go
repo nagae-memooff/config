@@ -57,7 +57,22 @@ func GetAll() *map[string]string {
 	return &conf
 }
 
+// 获取单个键值
 func Get(key string) (value string) {
 	value = conf[key]
 	return
+}
+
+// 临时设置键值。本方法不会覆盖配置文件，因此重启后无法保存。
+func Set(key string, value string) {
+	conf[key] = value
+	return
+}
+
+// 以可变参数的形式获取多个键值，并按顺序返回值的切片。
+func GetMulti(keys ...string)(values []string){
+	for _, key := range keys {
+		values = append(values, conf[key])
+	}
+  return
 }
