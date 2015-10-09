@@ -5,7 +5,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
-//   "fmt"
+	//   "fmt"
 )
 
 var ptn *regexp.Regexp
@@ -70,17 +70,17 @@ func Set(key string, value string) {
 }
 
 // 以可变参数的形式获取多个键值，并按顺序返回[]interface{}类型的切片。
-func GetMulti(keys ...string)(values []interface{}){
+func GetMulti(keys ...string) (values []interface{}) {
 	for _, key := range keys {
 		values = append(values, conf[key])
 	}
-  return
+	return
 }
 
 // 以可变参数的形式获取多个键值，并按顺序返回[]string类型的切片。
-func GetMultiValues(keys ...string)(values []string){
+func GetMultiValues(keys ...string) (values []string) {
 	for _, key := range keys {
 		values = append(values, conf[key])
 	}
-  return
+	return
 }
