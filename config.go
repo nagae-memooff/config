@@ -84,3 +84,9 @@ func GetMultiValues(keys ...string) (values []string) {
 	}
 	return
 }
+
+func Default(key, value string) {
+	if Get(key) == "" {
+		Set(key, value)
+	}
+}
