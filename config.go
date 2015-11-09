@@ -42,8 +42,10 @@ func Parse(filename string) (err error) {
 		case strings.Index(str[i], "#") == 0:
 			// 说明是注释行，什么也不做
 		case strings.Index(str[i], "=") > 0:
-			kvs := strings.Split(str[i], "=")
-			key, val := strings.TrimSpace(kvs[0]), strings.Trim(kvs[1], `"`)
+			index := strings.Index(str[i], "=")
+			key, val := strings.TrimSpace(str[i][:index]), strings.Trim(strings.TrimSpace(str[i][index+1:]), `"`)
+//       kvs := strings.Split(str[i], "=")
+//       key, val := strings.TrimSpace(kvs[0]), strings.Trim(kvs[1], `"`)
 			conf[key] = val
 		default:
 			err = errors.New("parse config files failed! please check this line:" + str[i])
