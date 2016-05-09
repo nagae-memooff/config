@@ -20,20 +20,22 @@ func init() {
 	}
 }
 
-func Parse(filename string) (err error) {
+func ParseToModel(filename string) (model map[string]string, err error) {
+	model = make(map[string]string)
+
 	fi, err := os.Stat(filename)
 	if err != nil {
 		return
 	}
 
 	f, err := os.Open(filename)
+	defer f.Close()
 	if err != nil {
 		return
 	}
 
 	buff := make([]byte, fi.Size())
 	f.Read(buff)
-	f.Close()
 
 	str := ptn.FindAllString(string(buff), -1)
 
@@ -44,8 +46,43 @@ func Parse(filename string) (err error) {
 		case strings.Index(str[i], "=") > 0:
 			index := strings.Index(str[i], "=")
 			key, val := strings.TrimSpace(str[i][:index]), strings.Trim(strings.TrimSpace(str[i][index+1:]), `"`)
-//       kvs := strings.Split(str[i], "=")
-//       key, val := strings.TrimSpace(kvs[0]), strings.Trim(kvs[1], `"`)
+			//       kvs := strings.Split(str[i], "=")
+			//       key, val := strings.TrimSpace(kvs[0]), strings.Trim(kvs[1], `"`)
+			model[key] = val
+		default:
+			err = errors.New("parse config files failed! please check this line:" + str[i])
+			return
+		}
+	}
+	return
+}
+
+func Parse(filename string) (err error) {
+	fi, err := os.Stat(filename)
+	if err != nil {
+		return
+	}
+
+	f, err := os.Open(filename)
+	defer f.Close()
+	if err != nil {
+		return
+	}
+
+	buff := make([]byte, fi.Size())
+	f.Read(buff)
+
+	str := ptn.FindAllString(string(buff), -1)
+
+	for i := 0; i < len(str); i++ {
+		switch {
+		case strings.Index(str[i], "#") == 0:
+			// 说明是注释行，什么也不做
+		case strings.Index(str[i], "=") > 0:
+			index := strings.Index(str[i], "=")
+			key, val := strings.TrimSpace(str[i][:index]), strings.Trim(strings.TrimSpace(str[i][index+1:]), `"`)
+			//       kvs := strings.Split(str[i], "=")
+			//       key, val := strings.TrimSpace(kvs[0]), strings.Trim(kvs[1], `"`)
 			conf[key] = val
 		default:
 			err = errors.New("parse config files failed! please check this line:" + str[i])
