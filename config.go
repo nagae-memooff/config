@@ -159,3 +159,7 @@ func Default(key, value string) {
 		Set(key, value)
 	}
 }
+
+func Clean() {
+	conf = make(map[string]string)
+}
