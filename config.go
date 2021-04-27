@@ -1,7 +1,13 @@
 package config
 
 import (
+	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
+	"fmt"
 	"os"
 	"regexp"
 	"strconv"
@@ -54,6 +60,21 @@ func ParseToModel(filename string) (model map[string]string, err error) {
 			return
 		}
 	}
+
+	encrypted_key := model["encrypted_key"]
+	if encrypted_key != "" {
+		for key, value := range model {
+			if strings.Index(key, "_encrypted_") == 0 {
+				// if key == "_encrypted_mysql_pwd" {
+				//   decrypted_key := "mysql_pwd"
+				decrypted_key := strings.TrimLeft(key, "_encrypted_")
+				decrypted_value := Decrypt(value, encrypted_key, "a0fe7c7c98e09e8c")
+
+				model[decrypted_key] = decrypted_value
+			}
+		}
+	}
+
 	return
 }
 
@@ -87,6 +108,20 @@ func Parse(filename string) (err error) {
 		default:
 			err = errors.New("parse config files failed! please check this line:" + str[i])
 			return
+		}
+	}
+
+	encrypted_key := conf["encrypted_key"]
+	if encrypted_key != "" {
+		for key, value := range conf {
+			if strings.Index(key, "_encrypted_") == 0 {
+				// if key == "_encrypted_mysql_pwd" {
+				//   decrypted_key := "mysql_pwd"
+				decrypted_key := strings.TrimLeft(key, "_encrypted_")
+				decrypted_value := Decrypt(value, encrypted_key, "a0fe7c7c98e09e8c")
+
+				conf[decrypted_key] = decrypted_value
+			}
 		}
 	}
 	return
@@ -162,4 +197,71 @@ func Default(key, value string) {
 
 func Clean() {
 	conf = make(map[string]string)
+}
+
+func Decrypt(encrypted, key, iv string) string {
+	_key := []byte(md5_digest(md5_hexdigest(key)))
+
+	block, err := aes.NewCipher(_key)
+	if err != nil {
+		return ""
+	}
+
+	_iv := []byte(iv)
+	ciphertext, _ := hex.DecodeString(encrypted)
+
+	if len(ciphertext)%aes.BlockSize != 0 {
+		return ""
+	}
+
+	mode := cipher.NewCBCDecrypter(block, _iv)
+	mode.CryptBlocks(ciphertext, ciphertext)
+
+	return string(pkcs7_unpadding(ciphertext))
+}
+
+func Encrypt(data, key, iv string) string {
+	_key := []byte(md5_digest(md5_hexdigest(key)))
+
+	block, err := aes.NewCipher(_key)
+	if err != nil {
+		return ""
+	}
+
+	_iv := []byte(iv)
+	padding_data := pkcs7_padding([]byte(data))
+
+	encrypted_data := make([]byte, len(padding_data))
+	mode := cipher.NewCBCEncrypter(block, _iv)
+	mode.CryptBlocks(encrypted_data, padding_data)
+
+	return hex.EncodeToString(encrypted_data)
+
+}
+
+func md5_hexdigest(str string) string {
+	data := []byte(str)
+
+	return fmt.Sprintf("%x", md5.Sum(data))
+}
+
+func md5_digest(str string) string {
+	data := []byte(str)
+
+	return fmt.Sprintf("%s", md5.Sum(data))
+}
+
+func pkcs7_unpadding(origData []byte) []byte {
+	length := len(origData)
+
+	unpadding := int(origData[length-1])
+	return origData[:(length - unpadding)]
+}
+
+func pkcs7_padding(origData []byte) []byte {
+	blockSize := aes.BlockSize
+
+	padding := blockSize - len(origData)%blockSize
+	padtext := bytes.Repeat([]byte{byte(padding)}, padding)
+	return append(origData, padtext...)
 }
