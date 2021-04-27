@@ -255,6 +255,10 @@ func pkcs7_unpadding(origData []byte) []byte {
 	length := len(origData)
 
 	unpadding := int(origData[length-1])
+	if length <= unpadding {
+		return make([]byte, 0)
+	}
+
 	return origData[:(length - unpadding)]
 }
 
